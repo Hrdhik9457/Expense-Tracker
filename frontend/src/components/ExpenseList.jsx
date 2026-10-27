@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 function ExpenseList(props) {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDate, setSelectedDate] = useState('');
   const [itemToDelete, setItemToDelete] = useState(null);
 
   var allItems = props.expenses || [];
@@ -18,7 +19,13 @@ function ExpenseList(props) {
       matchSearch = item.title.toLowerCase().indexOf(searchTerm.toLowerCase()) !== -1;
     }
 
-    return matchCategory && matchSearch;
+    var matchDate = true;
+    if (selectedDate !== '') {
+      var itemDateStr = item.date ? new Date(item.date).toISOString().substring(0, 10) : '';
+      matchDate = (itemDateStr === selectedDate);
+    }
+
+    return matchCategory && matchSearch && matchDate;
   });
 
   function formatExpenseDate(str) {
@@ -32,12 +39,19 @@ function ExpenseList(props) {
     return day + '/' + month + '/' + year;
   }
 
+  function setFilterToToday() {
+    var todayStr = new Date().toISOString().substring(0, 10);
+    setSelectedDate(todayStr);
+  }
+
   function confirmDelete() {
     if (itemToDelete) {
       props.onDelete(itemToDelete._id);
       setItemToDelete(null);
     }
   }
+
+  var hasActiveFilter = selectedCategory !== 'All' || searchTerm !== '' || selectedDate !== '';
 
   return (
     <div>
@@ -63,10 +77,26 @@ function ExpenseList(props) {
             placeholder="Search by title..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ flex: 1, minWidth: '150px' }}
+            style={{ flex: 1, minWidth: '130px' }}
           />
 
-          {(selectedCategory !== 'All' || searchTerm) && (
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            title="Search by specific date"
+          />
+
+          <button
+            type="button"
+            className="btn btn-secondary"
+            style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+            onClick={setFilterToToday}
+          >
+            Today
+          </button>
+
+          {hasActiveFilter && (
             <button
               type="button"
               className="btn btn-secondary"
@@ -74,6 +104,7 @@ function ExpenseList(props) {
               onClick={() => {
                 setSelectedCategory('All');
                 setSearchTerm('');
+                setSelectedDate('');
               }}
             >
               Reset

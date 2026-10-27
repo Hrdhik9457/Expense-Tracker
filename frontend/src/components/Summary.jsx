@@ -5,12 +5,24 @@ function Summary(props) {
 
   var totalAmount = 0;
   var highest = 0;
+  var todayTotal = 0;
+
+  var now = new Date();
+  var todayStr = now.toISOString().substring(0, 10);
 
   for (var i = 0; i < list.length; i++) {
     var val = Number(list[i].amount) || 0;
     totalAmount += val;
     if (val > highest) {
       highest = val;
+    }
+
+    if (list[i].date) {
+      var d = new Date(list[i].date);
+      var itemDateStr = d.toISOString().substring(0, 10);
+      if (itemDateStr === todayStr) {
+        todayTotal += val;
+      }
     }
   }
 
@@ -30,6 +42,11 @@ function Summary(props) {
       </div>
 
       <div className="summary-right">
+        <div className="summary-stat">
+          <div className="stat-value">Rs. {todayTotal.toFixed(2)}</div>
+          <div className="stat-label">Today's Expenses</div>
+        </div>
+
         <div className="summary-stat">
           <div className="stat-value">Rs. {average}</div>
           <div className="stat-label">Avg per expense</div>
