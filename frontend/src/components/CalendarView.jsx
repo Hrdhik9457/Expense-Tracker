@@ -5,6 +5,7 @@ function CalendarView(props) {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [chosenDateStr, setChosenDateStr] = useState(now.toISOString().slice(0, 10));
+  const [viewingMonthAll, setViewingMonthAll] = useState(false);
 
   var monthTitles = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -33,12 +34,14 @@ function CalendarView(props) {
   var currentMonthPrefix = year + '-' + ((month + 1 < 10) ? '0' + (month + 1) : String(month + 1));
   var monthTotal = 0;
   var monthCount = 0;
+  var monthExpenses = [];
 
   for (var k = 0; k < list.length; k++) {
     var ymKey = list[k].date ? String(list[k].date).slice(0, 7) : '';
     if (ymKey === currentMonthPrefix) {
       monthTotal += Number(list[k].amount) || 0;
       monthCount += 1;
+      monthExpenses.push(list[k]);
     }
   }
 
@@ -65,6 +68,7 @@ function CalendarView(props) {
     setYear(today.getFullYear());
     setMonth(today.getMonth());
     setChosenDateStr(today.toISOString().slice(0, 10));
+    setViewingMonthAll(false);
   }
 
   function formatDisplayDate(val) {
@@ -90,14 +94,32 @@ function CalendarView(props) {
   }
 
   var selectedInfo = dateMap[chosenDateStr] || { records: [], total: 0 };
+  var activeTableRows = viewingMonthAll ? monthExpenses : selectedInfo.records;
+  var activeTotalAmount = viewingMonthAll ? monthTotal : selectedInfo.total;
 
   return (
     <div>
       <div className="card">
         <div className="calendar-header">
           <div>
-            <h2 style={{ margin: 0, padding: 0, border: 'none' }}>
-              {monthTitles[month]} {year}
+            <h2
+              onClick={function() { setViewingMonthAll(true); }}
+              title="Click to view all expenses for this month"
+              style={{
+                margin: 0,
+                padding: '4px 6px',
+                border: 'none',
+                cursor: 'pointer',
+                borderRadius: '6px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              <span>{monthTitles[month]} {year}</span>
+              <span style={{ fontSize: '0.74rem', fontWeight: 600, color: 'var(--primary)', background: '#e8f0fe', padding: '2px 8px', borderRadius: '10px' }}>
+                {viewingMonthAll ? 'Showing Full Month' : 'Click to view all'}
+              </span>
             </h2>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
@@ -134,7 +156,7 @@ function CalendarView(props) {
             var cellKey = year + '-' + mStr + '-' + dStr;
 
             var dayData = dateMap[cellKey];
-            var isChosen = (cellKey === chosenDateStr);
+            var isChosen = (!viewingMonthAll && cellKey === chosenDateStr);
             var hasExpense = Boolean(dayData && dayData.records.length > 0);
 
             var cellClassName = 'calendar-cell';
@@ -145,7 +167,10 @@ function CalendarView(props) {
               <div
                 key={cellKey}
                 className={cellClassName}
-                onClick={function() { setChosenDateStr(cellKey); }}
+                onClick={function() {
+                  setChosenDateStr(cellKey);
+                  setViewingMonthAll(false);
+                }}
               >
                 <span className="calendar-day-num">{dayNum}</span>
                 {hasExpense && (
@@ -158,7 +183,23 @@ function CalendarView(props) {
           })}
         </div>
 
-        <div style={{ marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem', color: '#666', flexWrap: 'wrap', gap: '8px' }}>
+        <div
+          onClick={function() { setViewingMonthAll(true); }}
+          style={{
+            marginTop: '16px',
+            borderTop: '1px solid var(--border)',
+            paddingTop: '12px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            fontSize: '0.88rem',
+            color: '#666',
+            flexWrap: 'wrap',
+            gap: '8px',
+            cursor: 'pointer'
+          }}
+          title="Click to view all expenses for this month"
+        >
           <span>
             {monthTitles[month]} {year} Overview: <strong>{monthCount} {monthCount === 1 ? 'expense' : 'expenses'}</strong>
           </span>
@@ -171,18 +212,26 @@ function CalendarView(props) {
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
           <h2>
-            Expenses for {formatDisplayDate(chosenDateStr)}
+            {viewingMonthAll
+              ? 'Expenses for ' + monthTitles[month] + ' ' + year
+              : 'Expenses for ' + formatDisplayDate(chosenDateStr)
+            }
           </h2>
-          {selectedInfo.records.length > 0 && (
+          {activeTableRows.length > 0 && (
             <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--primary)' }}>
-              Total: Rs. {selectedInfo.total.toFixed(2)}
+              Total: Rs. {activeTotalAmount.toFixed(2)}
             </div>
           )}
         </div>
 
-        {selectedInfo.records.length === 0 ? (
+        {activeTableRows.length === 0 ? (
           <div className="empty-state" style={{ padding: '24px' }}>
-            <p>No expenses recorded on {formatDisplayDate(chosenDateStr)}.</p>
+            <p>
+              {viewingMonthAll
+                ? 'No expenses recorded in ' + monthTitles[month] + ' ' + year + '.'
+                : 'No expenses recorded on ' + formatDisplayDate(chosenDateStr) + '.'
+              }
+            </p>
           </div>
         ) : (
           <div className="table-wrapper">
@@ -193,11 +242,12 @@ function CalendarView(props) {
                   <th>Title</th>
                   <th>Amount</th>
                   <th>Category</th>
+                  {viewingMonthAll && <th>Date</th>}
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {selectedInfo.records.map(function(item, idx) {
+                {activeTableRows.map(function(item, idx) {
                   return (
                     <tr key={item._id || idx}>
                       <td>{idx + 1}</td>
@@ -212,6 +262,7 @@ function CalendarView(props) {
                           {item.category}
                         </span>
                       </td>
+                      {viewingMonthAll && <td>{formatDisplayDate(item.date)}</td>}
                       <td>
                         <div className="actions-cell">
                           <button
