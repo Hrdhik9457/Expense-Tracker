@@ -1,124 +1,113 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import axios from 'axios';
 import './index.css';
+
 import Summary from './components/Summary';
 import ExpenseForm from './components/ExpenseForm';
 import ExpenseList from './components/ExpenseList';
 import CalendarView from './components/CalendarView';
-import axios from 'axios';
 
-function App() {
-  const [expenses, setExpenses] = useState([]);
-  const [editingExpense, setEditingExpense] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [formLoading, setFormLoading] = useState(false);
-  const [alertMsg, setAlertMsg] = useState(null);
-  const [alertType, setAlertType] = useState('');
-  const [currentTab, setCurrentTab] = useState('expenses');
+export default function App() {
+  const [expenses, setExpenses] = React.useState([]);
+  const [activeEditItem, setActiveEditItem] = React.useState(null);
+  const [isFetching, setIsFetching] = React.useState(false);
+  const [isSaving, setIsSaving] = React.useState(false);
+  const [notice, setNotice] = React.useState(null);
+  const [currentTab, setCurrentTab] = React.useState('expenses');
 
-  useEffect(() => {
-    loadAllExpenses();
+  React.useEffect(function() {
+    retrieveData();
   }, []);
 
-  function loadAllExpenses() {
-    setLoading(true);
+  function retrieveData() {
+    setIsFetching(true);
     axios.get('/api/expenses')
-      .then(function(response) {
-        var data = response.data.data;
-        setExpenses(data);
-        setLoading(false);
+      .then(function(resp) {
+        setExpenses(resp.data.data || []);
+        setIsFetching(false);
       })
-      .catch(function(err) {
-        console.log('error fetching expenses:', err);
-        showMessage('error', 'Could not connect to server. Make sure backend is running.');
-        setLoading(false);
+      .catch(function(fault) {
+        flashNotice('Could not load data from database server.', true);
+        setIsFetching(false);
       });
   }
 
-  function showMessage(type, msg) {
-    setAlertType(type);
-    setAlertMsg(msg);
-    setTimeout(function() {
-      setAlertMsg(null);
-      setAlertType('');
-    }, 3500);
+  function flashNotice(text, isDanger) {
+    setNotice({ text: text, isDanger: isDanger });
+    window.setTimeout(function() {
+      setNotice(null);
+    }, 3800);
   }
 
-  async function handleSubmit(formData) {
-    setFormLoading(true);
+  async function handleRecordSubmit(payload) {
+    setIsSaving(true);
 
-    if (editingExpense) {
+    if (activeEditItem) {
       try {
-        var url = '/api/expenses/' + editingExpense._id;
-        var res = await axios.put(url, formData);
-        var updatedExpense = res.data.data;
+        var putTarget = '/api/expenses/' + activeEditItem._id;
+        var putResult = await axios.put(putTarget, payload);
+        var freshRow = putResult.data.data;
 
-        var newList = [];
-        for (var i = 0; i < expenses.length; i++) {
-          if (expenses[i]._id === editingExpense._id) {
-            newList.push(updatedExpense);
+        var nextRows = [];
+        for (var idx = 0; idx < expenses.length; idx++) {
+          var cur = expenses[idx];
+          if (cur._id === activeEditItem._id) {
+            nextRows.push(freshRow);
           } else {
-            newList.push(expenses[i]);
+            nextRows.push(cur);
           }
         }
-        setExpenses(newList);
-        setEditingExpense(null);
-        showMessage('success', 'Expense updated successfully!');
-        setFormLoading(false);
+
+        setExpenses(nextRows);
+        setActiveEditItem(null);
+        flashNotice('Expense updated successfully.', false);
+        setIsSaving(false);
         return true;
-      } catch(err) {
-        console.log('update failed', err);
-        var errMsg = 'Failed to update. Try again.';
-        if (err.response && err.response.data) {
-          errMsg = err.response.data.message;
-        }
-        showMessage('error', errMsg);
-        setFormLoading(false);
+      } catch (e) {
+        var errorDetail = (e.response && e.response.data && e.response.data.message) || 'Update operation rejected.';
+        flashNotice(errorDetail, true);
+        setIsSaving(false);
         return false;
       }
     } else {
       try {
-        var response = await axios.post('/api/expenses', formData);
-        var newExpense = response.data.data;
-        setExpenses([newExpense, ...expenses]);
-        showMessage('success', 'Expense added!');
-        setFormLoading(false);
+        var postResult = await axios.post('/api/expenses', payload);
+        var createdRow = postResult.data.data;
+        setExpenses([createdRow, ...expenses]);
+        flashNotice('New expense logged.', false);
+        setIsSaving(false);
         return true;
-      } catch(err) {
-        console.log('add failed:', err);
-        var msg = 'Something went wrong.';
-        if (err.response && err.response.data && err.response.data.message) {
-          msg = err.response.data.message;
-        }
-        showMessage('error', msg);
-        setFormLoading(false);
+      } catch (e) {
+        var reason = (e.response && e.response.data && e.response.data.message) || 'Saving expense failed.';
+        flashNotice(reason, true);
+        setIsSaving(false);
         return false;
       }
     }
   }
 
-  function handleDelete(id) {
-    axios.delete('/api/expenses/' + id)
+  function removeExpense(targetId) {
+    axios.delete('/api/expenses/' + targetId)
       .then(function() {
-        var filtered = expenses.filter(function(e) {
-          return e._id !== id;
+        var remainder = expenses.filter(function(row) {
+          return row._id !== targetId;
         });
-        setExpenses(filtered);
-        showMessage('success', 'Expense deleted.');
+        setExpenses(remainder);
+        flashNotice('Expense deleted.', false);
       })
-      .catch(function(err) {
-        console.log(err);
-        showMessage('error', 'Delete failed.');
+      .catch(function() {
+        flashNotice('Unable to remove expense entry.', true);
       });
   }
 
-  function handleEdit(expense) {
-    setEditingExpense(expense);
+  function triggerEdit(row) {
+    setActiveEditItem(row);
     setCurrentTab('expenses');
     window.scrollTo(0, 0);
   }
 
-  function handleCancelEdit() {
-    setEditingExpense(null);
+  function dismissEdit() {
+    setActiveEditItem(null);
   }
 
   return (
@@ -128,11 +117,11 @@ function App() {
         <p>Keep track of your daily spending</p>
       </header>
 
-      {alertMsg &&
-        <div className={'alert alert-' + alertType}>
-          {alertMsg}
+      {notice && (
+        <div className={'alert ' + (notice.isDanger ? 'alert-error' : 'alert-success')}>
+          {notice.text}
         </div>
-      }
+      )}
 
       <Summary expenses={expenses} />
 
@@ -156,28 +145,26 @@ function App() {
       {currentTab === 'expenses' ? (
         <div>
           <ExpenseForm
-            onSubmit={handleSubmit}
-            editingExpense={editingExpense}
-            onCancelEdit={handleCancelEdit}
-            loading={formLoading}
+            onSubmit={handleRecordSubmit}
+            editingExpense={activeEditItem}
+            onCancelEdit={dismissEdit}
+            loading={isSaving}
           />
 
           <ExpenseList
             expenses={expenses}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            loading={loading}
+            onEdit={triggerEdit}
+            onDelete={removeExpense}
+            loading={isFetching}
           />
         </div>
       ) : (
         <CalendarView
           expenses={expenses}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
+          onEdit={triggerEdit}
+          onDelete={removeExpense}
         />
       )}
     </div>
   );
 }
-
-export default App;
