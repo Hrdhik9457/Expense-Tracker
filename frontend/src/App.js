@@ -3,6 +3,7 @@ import './index.css';
 import Summary from './components/Summary';
 import ExpenseForm from './components/ExpenseForm';
 import ExpenseList from './components/ExpenseList';
+import CalendarView from './components/CalendarView';
 import axios from 'axios';
 
 function App() {
@@ -12,6 +13,7 @@ function App() {
   const [formLoading, setFormLoading] = useState(false);
   const [alertMsg, setAlertMsg] = useState(null);
   const [alertType, setAlertType] = useState('');
+  const [currentTab, setCurrentTab] = useState('expenses');
 
   useEffect(() => {
     loadAllExpenses();
@@ -111,6 +113,7 @@ function App() {
 
   function handleEdit(expense) {
     setEditingExpense(expense);
+    setCurrentTab('expenses');
     window.scrollTo(0, 0);
   }
 
@@ -133,19 +136,46 @@ function App() {
 
       <Summary expenses={expenses} />
 
-      <ExpenseForm
-        onSubmit={handleSubmit}
-        editingExpense={editingExpense}
-        onCancelEdit={handleCancelEdit}
-        loading={formLoading}
-      />
+      <div className="tab-navigation">
+        <button
+          type="button"
+          className={currentTab === 'expenses' ? 'tab-btn active' : 'tab-btn'}
+          onClick={function() { setCurrentTab('expenses'); }}
+        >
+          Expenses & Form
+        </button>
+        <button
+          type="button"
+          className={currentTab === 'calendar' ? 'tab-btn active' : 'tab-btn'}
+          onClick={function() { setCurrentTab('calendar'); }}
+        >
+          Calendar View
+        </button>
+      </div>
 
-      <ExpenseList
-        expenses={expenses}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        loading={loading}
-      />
+      {currentTab === 'expenses' ? (
+        <div>
+          <ExpenseForm
+            onSubmit={handleSubmit}
+            editingExpense={editingExpense}
+            onCancelEdit={handleCancelEdit}
+            loading={formLoading}
+          />
+
+          <ExpenseList
+            expenses={expenses}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            loading={loading}
+          />
+        </div>
+      ) : (
+        <CalendarView
+          expenses={expenses}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+      )}
     </div>
   );
 }
