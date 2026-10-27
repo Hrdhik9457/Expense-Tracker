@@ -28,6 +28,11 @@ function ExpenseList(props) {
     return matchCategory && matchSearch && matchDate;
   });
 
+  var filteredTotal = 0;
+  for (var k = 0; k < displayedExpenses.length; k++) {
+    filteredTotal += Number(displayedExpenses[k].amount) || 0;
+  }
+
   function formatExpenseDate(str) {
     if (!str) return '';
     var dateObj = new Date(str);
@@ -123,58 +128,68 @@ function ExpenseList(props) {
             </p>
           </div>
         ) : (
-          <div className="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Title</th>
-                  <th>Amount</th>
-                  <th>Category</th>
-                  <th>Date</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {displayedExpenses.map(function(item, idx) {
-                  return (
-                    <tr key={item._id || idx}>
-                      <td>{idx + 1}</td>
-                      <td><strong>{item.title}</strong></td>
-                      <td>
-                        <span className="amount">
-                          Rs. {Number(item.amount).toFixed(2)}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={'badge badge-' + item.category}>
-                          {item.category}
-                        </span>
-                      </td>
-                      <td>{formatExpenseDate(item.date)}</td>
-                      <td>
-                        <div className="actions-cell">
-                          <button
-                            type="button"
-                            className="btn btn-edit"
-                            onClick={() => props.onEdit(item)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-delete"
-                            onClick={() => setItemToDelete(item)}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div>
+            <div className="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Title</th>
+                    <th>Amount</th>
+                    <th>Category</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayedExpenses.map(function(item, idx) {
+                    return (
+                      <tr key={item._id || idx}>
+                        <td>{idx + 1}</td>
+                        <td><strong>{item.title}</strong></td>
+                        <td>
+                          <span className="amount">
+                            Rs. {Number(item.amount).toFixed(2)}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={'badge badge-' + item.category}>
+                            {item.category}
+                          </span>
+                        </td>
+                        <td>{formatExpenseDate(item.date)}</td>
+                        <td>
+                          <div className="actions-cell">
+                            <button
+                              type="button"
+                              className="btn btn-edit"
+                              onClick={() => props.onEdit(item)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-delete"
+                              onClick={() => setItemToDelete(item)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', color: '#666', borderTop: '1px solid #dee2e6', paddingTop: '10px' }}>
+              <span>Showing {displayedExpenses.length} {displayedExpenses.length === 1 ? 'expense' : 'expenses'}</span>
+              <span>
+                {selectedDate ? 'Total for ' + formatExpenseDate(selectedDate) + ': ' : 'Filtered Total: '}
+                <strong style={{ color: '#222', fontSize: '0.95rem' }}>Rs. {filteredTotal.toFixed(2)}</strong>
+              </span>
+            </div>
           </div>
         )}
       </div>
