@@ -19,7 +19,8 @@ expense-tracker/
 │   │   │   ├── ExpenseForm.jsx
 │   │   │   ├── ExpenseList.jsx
 │   │   │   ├── Summary.jsx
-│   │   │   └── CalendarView.jsx
+│   │   │   ├── CalendarView.jsx
+│   │   │   └── AnalyticsView.jsx
 │   │   ├── App.js
 │   │   ├── index.css
 │   │   └── index.js
@@ -88,6 +89,7 @@ Note: These are test credentials created for this evaluation on a free-tier Mong
 - Delete Expense: Removes item with confirmation modal dialog before deleting.
 - Summary: Total Amount Spent, Today's Expenses, Average per month, Average per expense, and Highest expense.
 - Calendar View: Interactive monthly calendar with day badges, month overview totals, and day-by-day expense inspection.
+- Graphical Analytics: Interactive bar charts showing Week-by-Week, Month-by-Month, and Year-by-Year spending comparisons with breakdown tables.
 - Filter & Search: Search by title, filter by category, and search by a specific date.
 - Pagination: Configurable rows per page (5, 10, 15, 20) with previous and next navigation.
 - Responsive Design: Clean interface adapted for both mobile and desktop screens.

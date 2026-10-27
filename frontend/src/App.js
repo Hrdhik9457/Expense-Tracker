@@ -6,6 +6,7 @@ import Summary from './components/Summary';
 import ExpenseForm from './components/ExpenseForm';
 import ExpenseList from './components/ExpenseList';
 import CalendarView from './components/CalendarView';
+import AnalyticsView from './components/AnalyticsView';
 
 var apiBase = process.env.REACT_APP_API_URL || '';
 
@@ -138,9 +139,16 @@ export default function App() {
         >
           Calendar View
         </button>
+        <button
+          type="button"
+          className={currentTab === 'analytics' ? 'tab-btn active' : 'tab-btn'}
+          onClick={function() { setCurrentTab('analytics'); }}
+        >
+          Graphical Analytics
+        </button>
       </div>
 
-      {currentTab === 'expenses' ? (
+      {currentTab === 'expenses' && (
         <div>
           <ExpenseForm
             onSubmit={handleRecordSubmit}
@@ -156,11 +164,19 @@ export default function App() {
             loading={isFetching}
           />
         </div>
-      ) : (
+      )}
+
+      {currentTab === 'calendar' && (
         <CalendarView
           expenses={expenses}
           onEdit={triggerEdit}
           onDelete={removeExpense}
+        />
+      )}
+
+      {currentTab === 'analytics' && (
+        <AnalyticsView
+          expenses={expenses}
         />
       )}
     </div>

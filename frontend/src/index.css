@@ -496,6 +496,62 @@ tbody td {
   text-overflow: ellipsis;
 }
 
+/* CHARTS / ANALYTICS */
+.chart-container {
+  background: var(--bg-gray);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 24px 16px 12px;
+  height: 250px;
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  overflow-x: auto;
+}
+.chart-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  flex: 1;
+  min-width: 65px;
+  justify-content: flex-end;
+}
+.chart-bar-wrap {
+  width: 100%;
+  height: 170px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.chart-bar {
+  width: 38px;
+  max-width: 80%;
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%);
+  transition: height 0.3s ease;
+  cursor: pointer;
+}
+.chart-bar:hover {
+  filter: brightness(1.1);
+}
+.chart-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-top: 8px;
+  text-align: center;
+  white-space: nowrap;
+}
+.chart-amount {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 6px;
+  text-align: center;
+  white-space: nowrap;
+}
+
 /* RESPONSIVE */
 @media (max-width: 640px) {
   .app-header h1 { font-size: 1.4rem; }
