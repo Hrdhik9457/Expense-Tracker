@@ -2,6 +2,12 @@
 
 A full-stack Personal Expense Tracker built with MongoDB, Express.js, React.js, and Node.js.
 
+## Live Frontend Demo (Vercel)
+
+- Preview Link: [https://expense-tracker-neon-seven-17.vercel.app?_vercel_share=1MBpCSNG2uYx5BC75seyG3yVo6PzOHJn](https://expense-tracker-neon-seven-17.vercel.app?_vercel_share=1MBpCSNG2uYx5BC75seyG3yVo6PzOHJn)
+
+*(Note: This link hosts the frontend UI on Vercel without a connected database server. To experience the complete full-stack app with live MongoDB Atlas integration, follow the setup instructions below).*
+
 ## Project Structure
 
 ```
@@ -10,14 +16,21 @@ expense-tracker/
 │   ├── public/
 │   ├── src/
 │   │   ├── components/
+│   │   │   ├── ExpenseForm.jsx
+│   │   │   ├── ExpenseList.jsx
+│   │   │   ├── Summary.jsx
+│   │   │   └── CalendarView.jsx
 │   │   ├── App.js
 │   │   ├── index.css
 │   │   └── index.js
 │   └── package.json
 ├── backend/
 │   ├── controllers/
+│   │   └── expenseController.js
 │   ├── models/
+│   │   └── Expense.js
 │   ├── routes/
+│   │   └── expenseRoutes.js
 │   ├── server.js
 │   ├── .env
 │   └── package.json
@@ -73,5 +86,8 @@ Note: These are test credentials created for this evaluation on a free-tier Mong
 - View Expenses: Live table view displaying title, amount, category, and date. Automatically refreshes after every add, edit, or delete action.
 - Edit Expense: Pre-fills existing expense data in the form and updates records in MongoDB and on-screen.
 - Delete Expense: Removes item with confirmation modal dialog before deleting.
-- Summary: Total Amount Spent displayed at the top, recalculating dynamically on every change.
-- Responsive Design: Clean CSS interface adapted for mobile and desktop screens.
+- Summary: Total Amount Spent, Today's Expenses, Average per month, Average per expense, and Highest expense.
+- Calendar View: Interactive monthly calendar with day badges, month overview totals, and day-by-day expense inspection.
+- Filter & Search: Search by title, filter by category, and search by a specific date.
+- Pagination: Configurable rows per page (5, 10, 15, 20) with previous and next navigation.
+- Responsive Design: Clean interface adapted for both mobile and desktop screens.
