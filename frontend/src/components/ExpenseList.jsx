@@ -6,6 +6,8 @@ function ExpenseList(props) {
   const [pickedDate, setPickedDate] = useState('');
   const [deletingId, setDeletingId] = useState(null);
   const [deletingName, setDeletingName] = useState('');
+  const [activePage, setActivePage] = useState(1);
+  const [perPageCount, setPerPageCount] = useState(10);
 
   var rawList = props.expenses || [];
   var resultList = [];
@@ -36,6 +38,18 @@ function ExpenseList(props) {
     runningTotal += Number(cur.amount) || 0;
   }
 
+  var totalPages = Math.ceil(resultList.length / perPageCount) || 1;
+  var currentPage = activePage;
+  if (currentPage > totalPages) {
+    currentPage = totalPages;
+  }
+  if (currentPage < 1) {
+    currentPage = 1;
+  }
+
+  var startPos = (currentPage - 1) * perPageCount;
+  var visibleRows = resultList.slice(startPos, startPos + perPageCount);
+
   function displayDate(val) {
     if (!val) return '';
     var s = String(val).slice(0, 10);
@@ -50,12 +64,14 @@ function ExpenseList(props) {
     var now = new Date();
     var iso = now.toISOString().slice(0, 10);
     setPickedDate(iso);
+    setActivePage(1);
   }
 
   function clearAllFilters() {
     setChosenCategory('All');
     setQueryText('');
     setPickedDate('');
+    setActivePage(1);
   }
 
   function askDelete(expense) {
@@ -82,7 +98,10 @@ function ExpenseList(props) {
           <label>Filter:</label>
           <select
             value={chosenCategory}
-            onChange={function(e) { setChosenCategory(e.target.value); }}
+            onChange={function(e) {
+              setChosenCategory(e.target.value);
+              setActivePage(1);
+            }}
           >
             <option value="All">All Categories</option>
             <option value="Food">Food</option>
@@ -96,14 +115,20 @@ function ExpenseList(props) {
             type="text"
             placeholder="Search by title..."
             value={queryText}
-            onChange={function(e) { setQueryText(e.target.value); }}
+            onChange={function(e) {
+              setQueryText(e.target.value);
+              setActivePage(1);
+            }}
             style={{ flex: 1, minWidth: '130px' }}
           />
 
           <input
             type="date"
             value={pickedDate}
-            onChange={function(e) { setPickedDate(e.target.value); }}
+            onChange={function(e) {
+              setPickedDate(e.target.value);
+              setActivePage(1);
+            }}
           />
 
           <button
@@ -152,11 +177,11 @@ function ExpenseList(props) {
                   </tr>
                 </thead>
                 <tbody>
-                  {resultList.map(function(item, idx) {
+                  {visibleRows.map(function(item, idx) {
                     var amt = Number(item.amount) || 0;
                     return (
                       <tr key={item._id || idx}>
-                        <td>{idx + 1}</td>
+                        <td>{startPos + idx + 1}</td>
                         <td><strong>{item.title}</strong></td>
                         <td>
                           <span className="amount">
@@ -194,12 +219,56 @@ function ExpenseList(props) {
               </table>
             </div>
 
-            <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', color: '#666', borderTop: '1px solid #dee2e6', paddingTop: '10px' }}>
-              <span>Showing {resultList.length} {resultList.length === 1 ? 'expense' : 'expenses'}</span>
-              <span>
+            <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', color: '#666', borderTop: '1px solid #dee2e6', paddingTop: '12px', flexWrap: 'wrap', gap: '10px' }}>
+              <div>
+                Showing {resultList.length === 0 ? 0 : startPos + 1} to {Math.min(startPos + perPageCount, resultList.length)} of {resultList.length} expenses
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.82rem' }}>Rows per page:</span>
+                <select
+                  value={perPageCount}
+                  onChange={function(e) {
+                    setPerPageCount(Number(e.target.value));
+                    setActivePage(1);
+                  }}
+                  style={{ padding: '4px 8px', fontSize: '0.82rem', border: '1px solid #ccc', borderRadius: '4px' }}
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={15}>15</option>
+                  <option value={20}>20</option>
+                </select>
+
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ padding: '4px 10px', fontSize: '0.8rem' }}
+                  disabled={currentPage <= 1}
+                  onClick={function() { setActivePage(currentPage - 1); }}
+                >
+                  &lt; Prev
+                </button>
+
+                <span style={{ fontWeight: 600, color: '#333', fontSize: '0.82rem' }}>
+                  {currentPage} / {totalPages}
+                </span>
+
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ padding: '4px 10px', fontSize: '0.8rem' }}
+                  disabled={currentPage >= totalPages}
+                  onClick={function() { setActivePage(currentPage + 1); }}
+                >
+                  Next &gt;
+                </button>
+              </div>
+
+              <div>
                 {pickedDate ? 'Total for ' + displayDate(pickedDate) + ': ' : 'Filtered Total: '}
                 <strong style={{ color: '#222', fontSize: '0.95rem' }}>Rs. {runningTotal.toFixed(2)}</strong>
-              </span>
+              </div>
             </div>
           </div>
         )}
