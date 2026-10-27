@@ -7,6 +7,8 @@ import ExpenseForm from './components/ExpenseForm';
 import ExpenseList from './components/ExpenseList';
 import CalendarView from './components/CalendarView';
 
+var apiBase = process.env.REACT_APP_API_URL || '';
+
 export default function App() {
   const [expenses, setExpenses] = React.useState([]);
   const [activeEditItem, setActiveEditItem] = React.useState(null);
@@ -16,21 +18,17 @@ export default function App() {
   const [currentTab, setCurrentTab] = React.useState('expenses');
 
   React.useEffect(function() {
-    retrieveData();
-  }, []);
-
-  function retrieveData() {
     setIsFetching(true);
-    axios.get('/api/expenses')
+    axios.get(apiBase + '/api/expenses')
       .then(function(resp) {
         setExpenses(resp.data.data || []);
         setIsFetching(false);
       })
-      .catch(function(fault) {
+      .catch(function() {
         flashNotice('Could not load data from database server.', true);
         setIsFetching(false);
       });
-  }
+  }, []);
 
   function flashNotice(text, isDanger) {
     setNotice({ text: text, isDanger: isDanger });
@@ -44,7 +42,7 @@ export default function App() {
 
     if (activeEditItem) {
       try {
-        var putTarget = '/api/expenses/' + activeEditItem._id;
+        var putTarget = apiBase + '/api/expenses/' + activeEditItem._id;
         var putResult = await axios.put(putTarget, payload);
         var freshRow = putResult.data.data;
 
@@ -71,7 +69,7 @@ export default function App() {
       }
     } else {
       try {
-        var postResult = await axios.post('/api/expenses', payload);
+        var postResult = await axios.post(apiBase + '/api/expenses', payload);
         var createdRow = postResult.data.data;
         setExpenses([createdRow, ...expenses]);
         flashNotice('New expense logged.', false);
@@ -87,7 +85,7 @@ export default function App() {
   }
 
   function removeExpense(targetId) {
-    axios.delete('/api/expenses/' + targetId)
+    axios.delete(apiBase + '/api/expenses/' + targetId)
       .then(function() {
         var remainder = expenses.filter(function(row) {
           return row._id !== targetId;
