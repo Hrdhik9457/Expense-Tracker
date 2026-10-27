@@ -30,6 +30,18 @@ function CalendarView(props) {
     }
   }
 
+  var currentMonthPrefix = year + '-' + ((month + 1 < 10) ? '0' + (month + 1) : String(month + 1));
+  var monthTotal = 0;
+  var monthCount = 0;
+
+  for (var k = 0; k < list.length; k++) {
+    var ymKey = list[k].date ? String(list[k].date).slice(0, 7) : '';
+    if (ymKey === currentMonthPrefix) {
+      monthTotal += Number(list[k].amount) || 0;
+      monthCount += 1;
+    }
+  }
+
   function goPrevMonth() {
     if (month === 0) {
       setMonth(11);
@@ -144,6 +156,15 @@ function CalendarView(props) {
               </div>
             );
           })}
+        </div>
+
+        <div style={{ marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem', color: '#666', flexWrap: 'wrap', gap: '8px' }}>
+          <span>
+            {monthTitles[month]} {year} Overview: <strong>{monthCount} {monthCount === 1 ? 'expense' : 'expenses'}</strong>
+          </span>
+          <span>
+            Total for {monthTitles[month]}: <strong style={{ color: 'var(--primary)', fontSize: '1rem' }}>Rs. {monthTotal.toFixed(2)}</strong>
+          </span>
         </div>
       </div>
 
