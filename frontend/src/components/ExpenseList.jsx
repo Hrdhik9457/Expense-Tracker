@@ -1,62 +1,77 @@
 import React, { useState } from 'react';
 
 function ExpenseList(props) {
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDate, setSelectedDate] = useState('');
-  const [itemToDelete, setItemToDelete] = useState(null);
+  const [chosenCategory, setChosenCategory] = useState('All');
+  const [queryText, setQueryText] = useState('');
+  const [pickedDate, setPickedDate] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
+  const [deletingName, setDeletingName] = useState('');
 
-  var allItems = props.expenses || [];
+  var rawList = props.expenses || [];
+  var resultList = [];
+  var runningTotal = 0;
 
-  var displayedExpenses = allItems.filter(function(item) {
-    var matchCategory = true;
-    if (selectedCategory !== 'All') {
-      matchCategory = (item.category === selectedCategory);
+  for (var i = 0; i < rawList.length; i++) {
+    var cur = rawList[i];
+
+    if (chosenCategory !== 'All' && cur.category !== chosenCategory) {
+      continue;
     }
 
-    var matchSearch = true;
-    if (searchTerm.trim() !== '') {
-      matchSearch = item.title.toLowerCase().indexOf(searchTerm.toLowerCase()) !== -1;
+    if (queryText.trim() !== '') {
+      var heading = cur.title ? cur.title.toLowerCase() : '';
+      if (heading.indexOf(queryText.toLowerCase()) === -1) {
+        continue;
+      }
     }
 
-    var matchDate = true;
-    if (selectedDate !== '') {
-      var itemDateStr = item.date ? new Date(item.date).toISOString().substring(0, 10) : '';
-      matchDate = (itemDateStr === selectedDate);
+    if (pickedDate !== '') {
+      var isoDate = cur.date ? String(cur.date).slice(0, 10) : '';
+      if (isoDate !== pickedDate) {
+        continue;
+      }
     }
 
-    return matchCategory && matchSearch && matchDate;
-  });
-
-  var filteredTotal = 0;
-  for (var k = 0; k < displayedExpenses.length; k++) {
-    filteredTotal += Number(displayedExpenses[k].amount) || 0;
+    resultList.push(cur);
+    runningTotal += Number(cur.amount) || 0;
   }
 
-  function formatExpenseDate(str) {
-    if (!str) return '';
-    var dateObj = new Date(str);
-    var day = dateObj.getDate();
-    var month = dateObj.getMonth() + 1;
-    var year = dateObj.getFullYear();
-    if (day < 10) day = '0' + day;
-    if (month < 10) month = '0' + month;
-    return day + '/' + month + '/' + year;
+  function displayDate(val) {
+    if (!val) return '';
+    var s = String(val).slice(0, 10);
+    var chunks = s.split('-');
+    if (chunks.length === 3) {
+      return chunks[2] + '/' + chunks[1] + '/' + chunks[0];
+    }
+    return s;
   }
 
-  function setFilterToToday() {
-    var todayStr = new Date().toISOString().substring(0, 10);
-    setSelectedDate(todayStr);
+  function pickToday() {
+    var now = new Date();
+    var iso = now.toISOString().slice(0, 10);
+    setPickedDate(iso);
   }
 
-  function confirmDelete() {
-    if (itemToDelete) {
-      props.onDelete(itemToDelete._id);
-      setItemToDelete(null);
+  function clearAllFilters() {
+    setChosenCategory('All');
+    setQueryText('');
+    setPickedDate('');
+  }
+
+  function askDelete(expense) {
+    setDeletingId(expense._id);
+    setDeletingName(expense.title);
+  }
+
+  function runDelete() {
+    if (deletingId) {
+      props.onDelete(deletingId);
+      setDeletingId(null);
+      setDeletingName('');
     }
   }
 
-  var hasActiveFilter = selectedCategory !== 'All' || searchTerm !== '' || selectedDate !== '';
+  var isFiltered = chosenCategory !== 'All' || queryText.length > 0 || pickedDate.length > 0;
 
   return (
     <div>
@@ -66,8 +81,8 @@ function ExpenseList(props) {
         <div className="filter-bar">
           <label>Filter:</label>
           <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
+            value={chosenCategory}
+            onChange={function(e) { setChosenCategory(e.target.value); }}
           >
             <option value="All">All Categories</option>
             <option value="Food">Food</option>
@@ -80,37 +95,32 @@ function ExpenseList(props) {
           <input
             type="text"
             placeholder="Search by title..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={queryText}
+            onChange={function(e) { setQueryText(e.target.value); }}
             style={{ flex: 1, minWidth: '130px' }}
           />
 
           <input
             type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            title="Search by specific date"
+            value={pickedDate}
+            onChange={function(e) { setPickedDate(e.target.value); }}
           />
 
           <button
             type="button"
             className="btn btn-secondary"
             style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-            onClick={setFilterToToday}
+            onClick={pickToday}
           >
             Today
           </button>
 
-          {hasActiveFilter && (
+          {isFiltered && (
             <button
               type="button"
               className="btn btn-secondary"
               style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-              onClick={() => {
-                setSelectedCategory('All');
-                setSearchTerm('');
-                setSelectedDate('');
-              }}
+              onClick={clearAllFilters}
             >
               Reset
             </button>
@@ -119,10 +129,10 @@ function ExpenseList(props) {
 
         {props.loading ? (
           <div className="loading">Loading expenses...</div>
-        ) : displayedExpenses.length === 0 ? (
+        ) : resultList.length === 0 ? (
           <div className="empty-state">
             <p>
-              {allItems.length === 0
+              {rawList.length === 0
                 ? 'No expenses recorded yet. Add one above!'
                 : 'No expenses found matching current filter.'}
             </p>
@@ -142,14 +152,15 @@ function ExpenseList(props) {
                   </tr>
                 </thead>
                 <tbody>
-                  {displayedExpenses.map(function(item, idx) {
+                  {resultList.map(function(item, idx) {
+                    var amt = Number(item.amount) || 0;
                     return (
                       <tr key={item._id || idx}>
                         <td>{idx + 1}</td>
                         <td><strong>{item.title}</strong></td>
                         <td>
                           <span className="amount">
-                            Rs. {Number(item.amount).toFixed(2)}
+                            Rs. {amt.toFixed(2)}
                           </span>
                         </td>
                         <td>
@@ -157,20 +168,20 @@ function ExpenseList(props) {
                             {item.category}
                           </span>
                         </td>
-                        <td>{formatExpenseDate(item.date)}</td>
+                        <td>{displayDate(item.date)}</td>
                         <td>
                           <div className="actions-cell">
                             <button
                               type="button"
                               className="btn btn-edit"
-                              onClick={() => props.onEdit(item)}
+                              onClick={function() { props.onEdit(item); }}
                             >
                               Edit
                             </button>
                             <button
                               type="button"
                               className="btn btn-delete"
-                              onClick={() => setItemToDelete(item)}
+                              onClick={function() { askDelete(item); }}
                             >
                               Delete
                             </button>
@@ -184,37 +195,35 @@ function ExpenseList(props) {
             </div>
 
             <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', color: '#666', borderTop: '1px solid #dee2e6', paddingTop: '10px' }}>
-              <span>Showing {displayedExpenses.length} {displayedExpenses.length === 1 ? 'expense' : 'expenses'}</span>
+              <span>Showing {resultList.length} {resultList.length === 1 ? 'expense' : 'expenses'}</span>
               <span>
-                {selectedDate ? 'Total for ' + formatExpenseDate(selectedDate) + ': ' : 'Filtered Total: '}
-                <strong style={{ color: '#222', fontSize: '0.95rem' }}>Rs. {filteredTotal.toFixed(2)}</strong>
+                {pickedDate ? 'Total for ' + displayDate(pickedDate) + ': ' : 'Filtered Total: '}
+                <strong style={{ color: '#222', fontSize: '0.95rem' }}>Rs. {runningTotal.toFixed(2)}</strong>
               </span>
             </div>
           </div>
         )}
       </div>
 
-      {itemToDelete && (
-        <div className="modal-overlay" onClick={() => setItemToDelete(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+      {deletingId && (
+        <div className="modal-overlay" onClick={function() { setDeletingId(null); }}>
+          <div className="modal" onClick={function(e) { e.stopPropagation(); }}>
             <h3>Confirm Delete</h3>
             <p>
-              Are you sure you want to delete the expense for{' '}
-              <strong>"{itemToDelete.title}"</strong> of Rs.{' '}
-              {itemToDelete.amount}?
+              Are you sure you want to delete the expense for <strong>"{deletingName}"</strong>?
             </p>
             <div className="modal-actions">
               <button
                 type="button"
                 className="btn btn-secondary"
-                onClick={() => setItemToDelete(null)}
+                onClick={function() { setDeletingId(null); }}
               >
                 Cancel
               </button>
               <button
                 type="button"
                 className="btn btn-danger"
-                onClick={confirmDelete}
+                onClick={runDelete}
               >
                 Delete
               </button>

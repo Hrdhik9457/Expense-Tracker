@@ -1,93 +1,110 @@
 import React, { useState, useEffect } from 'react';
 
 function ExpenseForm(props) {
-  const [title, setTitle] = useState('');
-  const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState('');
-  const [date, setDate] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
+  const [formData, setFormData] = useState({
+    title: '',
+    amount: '',
+    category: '',
+    date: ''
+  });
+  const [errorMessage, setErrorMessage] = useState('');
 
-  useEffect(() => {
-    if (props.editingExpense) {
-      setTitle(props.editingExpense.title || '');
-      setAmount(props.editingExpense.amount || '');
-      setCategory(props.editingExpense.category || '');
-      
-      if (props.editingExpense.date) {
-        var d = new Date(props.editingExpense.date);
-        var formattedDate = d.toISOString().substring(0, 10);
-        setDate(formattedDate);
-      } else {
-        setDate('');
-      }
-      setErrorMsg('');
+  useEffect(function() {
+    var item = props.editingExpense;
+    if (item) {
+      var d = item.date ? String(item.date).slice(0, 10) : '';
+      setFormData({
+        title: item.title || '',
+        amount: item.amount || '',
+        category: item.category || '',
+        date: d
+      });
+      setErrorMessage('');
     } else {
-      setTitle('');
-      setAmount('');
-      setCategory('');
-      setDate('');
-      setErrorMsg('');
+      setFormData({
+        title: '',
+        amount: '',
+        category: '',
+        date: ''
+      });
+      setErrorMessage('');
     }
   }, [props.editingExpense]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  function handleInputChange(evt) {
+    var field = evt.target.name;
+    var value = evt.target.value;
+    setFormData(function(oldState) {
+      var copy = Object.assign({}, oldState);
+      copy[field] = value;
+      return copy;
+    });
+  }
 
-    if (!title.trim()) {
-      setErrorMsg('Please enter a title for the expense.');
+  function handleFormSubmit(evt) {
+    evt.preventDefault();
+
+    var titleVal = (formData.title || '').trim();
+    var numAmount = parseFloat(formData.amount);
+
+    if (titleVal.length === 0) {
+      setErrorMessage('Title cannot be empty');
       return;
     }
-    if (!amount || Number(amount) <= 0) {
-      setErrorMsg('Amount must be a positive number greater than 0.');
+    if (isNaN(numAmount) || numAmount <= 0) {
+      setErrorMessage('Amount must be positive number');
       return;
     }
-    if (!category) {
-      setErrorMsg('Please pick a category.');
+    if (!formData.category) {
+      setErrorMessage('Select a category');
       return;
     }
-    if (!date) {
-      setErrorMsg('Please select a date.');
+    if (!formData.date) {
+      setErrorMessage('Select a date');
       return;
     }
 
-    setErrorMsg('');
+    setErrorMessage('');
 
-    var expenseData = {
-      title: title.trim(),
-      amount: parseFloat(amount),
-      category: category,
-      date: date
-    };
-
-    props.onSubmit(expenseData).then((success) => {
-      if (success && !props.editingExpense) {
-        setTitle('');
-        setAmount('');
-        setCategory('');
-        setDate('');
+    props.onSubmit({
+      title: titleVal,
+      amount: numAmount,
+      category: formData.category,
+      date: formData.date
+    }).then(function(ok) {
+      if (ok && !props.editingExpense) {
+        setFormData({
+          title: '',
+          amount: '',
+          category: '',
+          date: ''
+        });
       }
     });
-  };
+  }
+
+  var isEditing = Boolean(props.editingExpense);
 
   return (
     <div className="card">
-      <h2>{props.editingExpense ? 'Edit Expense' : 'Add New Expense'}</h2>
+      <h2>{isEditing ? 'Edit Expense' : 'Add New Expense'}</h2>
 
-      {errorMsg && (
-        <p style={{ color: '#dc3545', marginBottom: '12px', fontSize: '0.9rem' }}>
-          {errorMsg}
-        </p>
+      {errorMessage.length > 0 && (
+        <div style={{ color: '#dc3545', marginBottom: '14px', fontSize: '14px' }}>
+          {errorMessage}
+        </div>
       )}
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleFormSubmit}>
         <div className="form-grid">
           <div className="form-group">
             <label>Title</label>
             <input
               type="text"
-              placeholder="e.g. Groceries, Coffee"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              name="title"
+              placeholder="e.g. Lunch, Groceries"
+              value={formData.title}
+              onChange={handleInputChange}
             />
           </div>
 
@@ -96,19 +113,21 @@ function ExpenseForm(props) {
             <input
               type="number"
               step="any"
+              name="amount"
               placeholder="0.00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              value={formData.amount}
+              onChange={handleInputChange}
             />
           </div>
 
           <div className="form-group">
             <label>Category</label>
             <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              name="category"
+              value={formData.category}
+              onChange={handleInputChange}
             >
-              <option value="">-- Select Category --</option>
+              <option value="">-- Choose Category --</option>
               <option value="Food">Food</option>
               <option value="Travel">Travel</option>
               <option value="Bills">Bills</option>
@@ -121,18 +140,19 @@ function ExpenseForm(props) {
             <label>Date</label>
             <input
               type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
+              name="date"
+              value={formData.date}
+              onChange={handleInputChange}
             />
           </div>
         </div>
 
         <div className="form-actions">
           <button type="submit" className="btn btn-primary" disabled={props.loading}>
-            {props.loading ? 'Saving...' : (props.editingExpense ? 'Update Expense' : 'Add Expense')}
+            {props.loading ? 'Saving...' : (isEditing ? 'Update Expense' : 'Add Expense')}
           </button>
-          
-          {props.editingExpense && (
+
+          {isEditing && (
             <button
               type="button"
               className="btn btn-secondary"
